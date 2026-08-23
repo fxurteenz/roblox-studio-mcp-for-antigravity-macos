@@ -1,0 +1,10 @@
+{
+	"mcpServers": {
+		"Roblox_Studio": {
+			"command": "python",
+			"args": [
+				"studiomcp_wrapper.py"
+			]
+		}
+	}
+}
