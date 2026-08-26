@@ -28,7 +28,7 @@ roblox-studio/
 ## Features
 
 1. **Resilient Connection Architecture**:
-   - Executes `python studiomcp_wrapper.py` directly to avoid batch syntax issues and withstand Roblox Studio automatic updates.
+   - Executes the bundled Python wrapper directly to avoid batch syntax issues and withstand Roblox Studio automatic updates.
    - Intercepts early `server/discover` probes to prevent StudioMCP crash-on-startup.
 2. **Safe Luau Execution**:
    - Prevents engine lockups and thread blocking with explicit yield requirements.
@@ -54,5 +54,55 @@ Place the plugin directory into your Antigravity global plugins folder:
 ~/.gemini/antigravity/plugins/roblox-studio/
 ```
 
-### Local Configuration Note:
-`mcp_config.json` calls the bundled `studiomcp_wrapper.py`. The wrapper discovers `StudioMCP.exe` automatically from the registry or `%LOCALAPPDATA%`, so no user-specific path should be required.
+### Required `mcp_config.json` Adjustment:
+`mcp_config.json` must reference `studiomcp_wrapper.py` with an absolute path. A bare relative entry such as `studiomcp_wrapper.py` may not resolve correctly depending on how Antigravity launches the MCP server.
+
+Use the absolute path to the copy of `studiomcp_wrapper.py` that you installed.
+
+Windows example:
+```json
+{
+   "mcpServers": {
+      "Roblox_Studio": {
+         "command": "python",
+         "args": [
+            "C:\\Users\\your-name\\.gemini\\antigravity\\plugins\\roblox-studio\\studiomcp_wrapper.py"
+         ]
+      }
+   }
+}
+```
+
+Linux example:
+```json
+{
+   "mcpServers": {
+      "Roblox_Studio": {
+         "command": "python3",
+         "args": [
+            "/home/your-name/.gemini/antigravity/plugins/roblox-studio/studiomcp_wrapper.py"
+         ]
+      }
+   }
+}
+```
+
+macOS example:
+```json
+{
+   "mcpServers": {
+      "Roblox_Studio": {
+         "command": "python3",
+         "args": [
+            "/Users/your-name/.gemini/antigravity/plugins/roblox-studio/studiomcp_wrapper.py"
+         ]
+      }
+   }
+}
+```
+
+Notes:
+- On Windows, keep the path fully qualified and escape backslashes inside JSON.
+- On Linux and macOS, use the full absolute path to the installed plugin folder.
+- If you installed the plugin inside a project workspace instead of the global plugins folder, point to that project-specific absolute path instead.
+- The wrapper still discovers `StudioMCP.exe` automatically; only the path to `studiomcp_wrapper.py` needs to be set explicitly.
