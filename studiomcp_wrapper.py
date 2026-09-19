@@ -10,31 +10,63 @@ def find_studio_mcp():
     if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
         return sys.argv[1]
 
-    # 2. Check Windows Registry
-    try:
-        import winreg
+    is_windows = sys.platform == "win32"
+    is_mac = sys.platform == "darwin"
+    
+    # dynamic define StudioMCP
+    exe_name = "StudioMCP.exe" if is_windows else "StudioMCP"
 
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER, r"Software\Roblox\RobloxStudio"
-        ) as key:
-            content_folder, _ = winreg.QueryValueEx(key, "ContentFolder")
-            parent_dir = os.path.dirname(os.path.normpath(content_folder))
-            exe_path = os.path.join(parent_dir, "StudioMCP.exe")
-            if os.path.isfile(exe_path):
-                return exe_path
-    except Exception:
-        pass
+    if is_windows:
+        # 2. Check Windows Registry
+        try:
+            import winreg
 
-    # 3. Check AppData Local Roblox Versions folder (pick latest modified)
-    local_app_data = os.environ.get("LOCALAPPDATA", "")
-    if local_app_data:
-        versions_dir = os.path.join(local_app_data, "Roblox", "Versions")
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, r"Software\Roblox\RobloxStudio"
+            ) as key:
+                content_folder, _ = winreg.QueryValueEx(key, "ContentFolder")
+                parent_dir = os.path.dirname(os.path.normpath(content_folder))
+                exe_path = os.path.join(parent_dir, exe_name)
+                if os.path.isfile(exe_path):
+                    return exe_path
+        except Exception:
+            pass
+
+        # 3. Check AppData Local Roblox Versions folder (pick latest modified)
+        local_app_data = os.environ.get("LOCALAPPDATA", "")
+        if local_app_data:
+            versions_dir = os.path.join(local_app_data, "Roblox", "Versions")
+            if os.path.isdir(versions_dir):
+                candidates = []
+                for entry in os.listdir(versions_dir):
+                    full_entry = os.path.join(versions_dir, entry)
+                    if os.path.isdir(full_entry):
+                        exe_path = os.path.join(full_entry, exe_name)
+                        if os.path.isfile(exe_path):
+                            candidates.append((os.path.getmtime(exe_path), exe_path))
+                if candidates:
+                    candidates.sort(key=lambda x: x[0], reverse=True)
+                    return candidates[0][1]
+
+    elif is_mac:
+        # check normal Application directory of macOS
+        mac_paths = [
+            "/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP",
+            os.path.expanduser("~/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP")
+        ]
+        
+        for path in mac_paths:
+            if os.path.isfile(path):
+                return path
+
+        # check Library directory if a Roblox app store "Versions"
+        versions_dir = os.path.expanduser("~/Library/Roblox/Versions")
         if os.path.isdir(versions_dir):
             candidates = []
             for entry in os.listdir(versions_dir):
                 full_entry = os.path.join(versions_dir, entry)
                 if os.path.isdir(full_entry):
-                    exe_path = os.path.join(full_entry, "StudioMCP.exe")
+                    exe_path = os.path.join(full_entry, exe_name)
                     if os.path.isfile(exe_path):
                         candidates.append((os.path.getmtime(exe_path), exe_path))
             if candidates:
@@ -58,7 +90,7 @@ def pump(src, dst):
 def main():
     studio_path = find_studio_mcp()
     if not studio_path or not os.path.isfile(studio_path):
-        sys.stderr.write("Error: Could not locate StudioMCP.exe on this system.\n")
+        sys.stderr.write("Error: Could not locate StudioMCP on this system.\n")
         sys.stderr.flush()
         sys.exit(1)
 
